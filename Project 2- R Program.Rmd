@@ -1,0 +1,337 @@
+EXPLORATORY DATA ANALYSIS ON GLOBAL AI JOB MARKET AND SALARY TRENDS
+
+INTRODUCTION
+The AI job market is experiencing rapid growth and high demand for skilled professionals, leading to competitive salaries across various roles. While some jobs may be automated, AI is also creating numerous new opportunities.
+This dataset provides an extensive analysis of the artificial intelligence job market with over 15,000 real job postings collected from major job platforms worldwide for the time period from January 2024 - May 2025. It includes detailed salary information, job requirements, company insights, and geographic trends.
+
+Column Description:
+
+Column	                    Description
+
+job_id                 - 	Unique identifier for each job posting
+job_title              - 	Standardized job title
+salary_usd             - 	Annual salary in USD	
+salary_currency	       -  Original salary currency
+salary_local	         -  Salary in local currency
+experience_level       -	EN (Entry), MI (Mid), SE (Senior), EX (Executive)
+employment_type	       -  FT (Full-time), PT (Part-time), CT (Contract), FL (Freelance)
+job_category	         -  ML Engineer, Data Scientist, AI Researcher, etc.
+company_location       - 	Country where company is located
+company_size	         -  S (Small <50), M (Medium 50-250), L (Large >250)
+employee_residence     - 	Country where employee resides
+remote_ratio	         -  0 (No remote), 50 (Hybrid), 100 (Fully remote)
+required_skills	       -  Top 5 required skills (comma-separated)
+education_required     -	Minimum education requirement
+years_experience	     -  Required years of experience
+industry	             -  Industry sector of the company
+posting_date	         -  Date when job was posted
+application_deadline   - 	Application deadline	Date
+job_description_length - 	Character count of job description
+benefits_score	       -  Numerical score of benefits package (1-10)
+
+Loading Library
+
+```{r}
+library(tidyverse, warn.conflicts = F)
+library(anytime, warn.conflicts = F)
+```
+
+Loading CSV
+
+```{r}
+data <- read.csv('./ai_job_dataset - Copy.csv', stringsAsFactors = FALSE)
+head(data,10)
+
+```
+```{r}
+tail(data,10)
+```
+
+
+Data Summary:
+
+```{r}
+glimpse(data)
+str(data)
+```
+Checking NULL Values:
+
+```{r}
+data %>% is.na %>% sum()
+```
+Checking Duplicates:
+
+```{r}
+duplicated(data) %>% sum()
+```
+Dimension:
+
+```{r}
+dim(data)
+```
+
+
+Distinct Values:
+
+```{r}
+data %>% distinct(job_title)
+data %>% distinct(required_skills)
+data %>% distinct(industry)
+data %>% distinct(company_location)
+data %>% distinct(company_location )
+```
+Column Names:
+```{r}
+colnames(data)
+```
+
+Count()
+
+
+```{r}
+data %>% count(job_title, sort = TRUE)
+data %>% count(remote_ratio , sort = TRUE )
+```
+Selecting Specific Columns - Select():
+
+```{r}
+data %>% select(job_title, salary_usd, employee_residence )
+data  %>% select(- (employment_type :company_name))
+```
+
+Filtering:
+
+```{r}
+data %>% filter(salary_usd > 100000)
+data %>% filter(salary_usd < 100000 & experience_level=='SE')
+```
+Arrange:
+
+```{r}
+data %>% arrange(salary_usd)
+data %>% arrange(desc(salary_usd ))
+```
+
+Summarize:
+
+```{r}
+Country_wise_sal <- data %>% group_by(Comp_loc) %>% summarise(Avg_salary = mean(salary_usd))
+Country_wise_sal
+Country_wise_sal %>% arrange(Avg_salary )
+```
+```{r}
+colnames(data)
+```
+
+Changing Date format:
+
+Mutate:
+```{r}
+str(data)
+data <- data %>% mutate(posting_date = anydate(data$posting_date))
+str(data)
+head(data,10)
+class(data$posting_date)
+```
+# Adding column for year:
+```{r}
+data <- data %>% mutate(Job_year = year(posting_date) )
+data <- data %>% mutate(Month_year = format(as.Date(data$posting_date),"%Y-%m"))
+data <- data %>% mutate(Comp_loc = abbreviate(company_location, minlength = 3 ) )
+head(data,10)
+
+```
+
+
+
+#Changing Column position:
+
+```{r}
+data <- data %>% relocate(.after = 'job_title',Job_year,Month_year)
+head(data)
+
+```
+
+#INSIGHTS:
+
+#BOX PLOT - Finding Average salary of AI Professionals:
+
+
+```{r}
+Country_wise_sal <- data %>% group_by(Comp_loc) %>% summarise(Avg_salary = mean(salary_usd))
+Country_wise_sal
+Country_wise_sal %>% arrange(Avg_salary )
+```
+```{r}
+mean(Country_wise_sal$Avg_salary)
+ggplot(Country_wise_sal,aes(y =Avg_salary ))+ geom_boxplot()
+
+# The average salary is $ 115k for AI professionals.
+```
+#Scatter Plot - Average salary of AI Professionals:
+```{r}
+Country_wise_sal %>% arrange(Avg_salary )
+```
+
+
+```{r}
+
+
+ggplot(
+  data = Country_wise_sal,
+  mapping = aes(x = Comp_loc,
+                y = Avg_salary)
+)+ geom_point()+labs(title = "Scatter Plot")
+
+```
+# Average salary based on expereince
+
+```{r}
+Avg_sal_exp <- data %>% group_by(years_experience) %>% summarise(Avg_salary = mean(salary_usd))
+Avg_sal_exp
+
+```
+
+```{r}
+ggplot(
+    data = Avg_sal_exp,
+    mapping = aes(x = years_experience, y = Avg_salary)
+)+ 
+geom_point()+
+geom_smooth(method = "lm")
+```
+# Salary based on Company Size
+```{r}
+Co_size <- data %>% group_by(Comp_loc,industry,company_size,remote_ratio,job_title,employment_type,experience_level,years_experience,required_skills) %>% summarise(Avg_salary = mean(salary_usd))
+Co_size
+Co_size %>% arrange(Avg_salary)
+colnames(data)
+```
+```{r}
+ggplot(
+    data = Co_size,
+    mapping = aes(x = Avg_salary, y = Comp_loc, color = company_size ))+ 
+geom_point()+
+geom_smooth(method = "lm")
+```
+
+# Job Postings trend month wise:(Market Trend)
+```{r}
+colnames(data)
+```
+
+
+```{r}
+ggplot(
+    data = data,
+    aes(y = Month_year)
+)+geom_bar(fill = 'navyblue')
+```
+# Job Posting by countries:
+
+```{r}
+ggplot(
+    data = data,
+    aes(y = company_location)
+)+geom_bar(fill = 'cyan3')
+```
+# Job posting by Title
+
+```{r}
+ggplot(
+    data = data,
+    aes(y = fct_infreq(job_title)
+))+geom_bar(fill = 'green4')
+```
+
+```{r}
+
+
+
+head(data,10)
+```
+
+
+```{r}
+head(Co_size,5)
+head(data,5)
+
+```
+
+
+# Factors affecting the salary:
+
+# a) Industry
+
+```{r}
+
+ggplot(
+    data = Co_size ,
+    mapping = aes(x = Avg_salary,
+                 y = industry, color = Avg_salary )
+)+geom_point()+labs(title = "Scatter Plot")
+
+```
+# b) Company Size
+```{r}
+ggplot(
+    data = Co_size ,
+    mapping = aes(x = Avg_salary,
+                 y = company_size, color = Avg_salary )
+)+geom_point()+labs(title = "Scatter Plot")
+
+```
+
+# c) Experience Level
+
+```{r}
+ggplot(
+    data = Co_size ,
+    mapping = aes(x = Avg_salary, y = years_experience)
+)+ 
+geom_point(mapping = aes(color =experience_level ))+
+geom_smooth(method = "lm")
+
+```
+
+#d) Job Title
+
+```{r}
+ggplot(
+    data = Co_size ,
+    mapping = aes(x = Avg_salary, y = job_title)
+)+ 
+geom_point(mapping = aes(color =experience_level ))+
+geom_smooth(method = "lm")
+```
+
+Finding:
+1) Average salary of an AI professional is $ 115K anually.
+2) Average salary of people with 10 - 15 years of experience are more than the more experienced ones.
+  Possibilities are,
+      > Upskilling
+      > Frequent changing of companies.
+3) Based on company size, Switzerland and Denmark are two countries payig highest salries and in Switzerland, even medium sized companies are paying higher salaries comparing to Denmark, that higher salaries are mostly paid by large companies.
+Also, Japan is the country that pays lowest annual salary.
+
+4) Based on Job posting trend,
+      > The year, April 2024 witnessed the highest job postings in AI.
+      > Requirements are continuing to grow in the 1st quarter of 2025.
+      > The profession is in demand and most opportunities are posted by Germany, Denmark etc. Comparatively,   Australia and Norway has posted least number of opportunities.
+      > Machine learning Research is the jon with highest number of opportunitiess followed by AI software engineer.
+      
+5) Factors affecting salary:
+      > Salary is mostly affected by the location, company size, experience level and job title/roles.
+      
+
+Conclusion:
+
+The AI continue to be a lucrative domain that promises a great career with ample opportunities across the world.
+Comparing to many other domain, the average salary of $ 115K, makes it a domain that is worth pursuing.
+
+Thank You!
+      
+  
+
+
+
